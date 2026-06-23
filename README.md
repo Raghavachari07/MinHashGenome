@@ -1,8 +1,19 @@
 # MinHashGenome
 
-A command-line tool in Java that estimates similarity between microbial genomes using **k-mer hashing and MinHash sketches** — no sequence alignment needed.
+A command-line tool available in both **Java** and **Rust** that estimates similarity between microbial genomes using **k-mer hashing and MinHash sketches** — no sequence alignment needed.
 
 Given a set of bacterial genome files (FASTA format), it outputs a pairwise distance matrix. Genomes that are biologically close (e.g., two *E. coli* strains) will have a low distance score; unrelated species will score near 1.0.
+
+---
+
+## Repository structure
+
+```
+MinHashGenome/
+├── MinHashGenome.java   # Java implementation
+├── minhash_genome.rs    # Rust implementation
+└── README.md
+```
 
 ---
 
@@ -26,16 +37,18 @@ Two sketches are compared by merging their sorted hash arrays and counting how m
 
 | Structure | Where | Why |
 |---|---|---|
-| `StringBuilder` | FASTA parser, reverse complement | Efficient string building without repeated concatenation |
-| `PriorityQueue<Long>` (max-heap) | MinHash sketch builder | Maintains the s smallest hashes seen so far in O(log s) per insertion |
-| `long[]` (sorted array) | Sketch storage | Enables O(s) linear merge for Jaccard computation |
-| `List<String>`, `List<long[]>` | Main method | Stores genome names and their sketches in order |
+| `StringBuilder` / `String` | FASTA parser, reverse complement | Efficient string building without repeated concatenation |
+| Max-heap (`PriorityQueue<Long>` / `BinaryHeap<u64>`) | MinHash sketch builder | Maintains the s smallest hashes seen so far in O(log s) per insertion |
+| Sorted array (`long[]` / `Vec<u64>`) | Sketch storage | Enables O(s) linear merge for Jaccard computation |
+| List / `Vec` | Main method | Stores genome names and their sketches in order |
 
 The key algorithmic insight is the **max-heap of fixed size s**: if a new hash is smaller than the current maximum in the heap, swap it in. This runs in O(L · log s) time where L is genome length — much faster than sorting all k-mers.
 
 ---
 
 ## Usage
+
+### Java
 
 ```bash
 # Compile
@@ -45,7 +58,26 @@ javac MinHashGenome.java
 java MinHashGenome ecoli.fna salmonella.fna klebsiella.fna
 
 # Custom k and sketch size
-java MinHashGenome *.fna --k 31 --sketch 2000
+java MinHashGenome *.fna --k 31 --s 2000
+```
+
+### Rust
+
+```bash
+# Compile (single file)
+rustc -O minhash_genome.rs -o minhash_genome
+
+# Or via Cargo
+cargo new minhash_genome
+cp minhash_genome.rs minhash_genome/src/main.rs
+cd minhash_genome
+cargo build --release
+
+# Run
+./minhash_genome ecoli.fna salmonella.fna klebsiella.fna
+
+# Custom k and sketch size
+./minhash_genome *.fna --k 31 --s 2000
 ```
 
 ---
@@ -80,5 +112,15 @@ Or browse at: https://www.ncbi.nlm.nih.gov/datasets/genome/
 
 ## Requirements
 
+### Java
 - Java 11 or higher
 - No external dependencies — standard library only
+
+### Rust
+- Rust 1.56 or higher (`rustup` recommended)
+- No external crates — standard library only
+
+Install Rust if needed:
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
